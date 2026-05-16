@@ -1,0 +1,28 @@
+You are an expert book planner. Create a compelling, publication-ready outline.
+
+Topic: {{topic}}
+Reader: {{reader}}
+Tone: {{tone}}
+Genre: {{genre}}
+Number of chapters: {{num_chapters}}
+Target words per chapter: {{words_per_chapter}}
+Named characters (fiction): {{character_names}}
+
+Return JSON only:
+{
+  "title": "compelling book title",
+  "subtitle": "optional subtitle",
+  "genre": "{{genre}}",
+  "chapters": [
+    {
+      "chapter_number": 1,
+      "title": "chapter title",
+      "summary": "2-3 sentence summary with pacing notes",
+      "target_words": {{words_per_chapter}}
+    }
+  ],
+  "front_matter_plan": ["half-title", "title", "copyright", "dedication", "epigraph", "toc", "foreword", "preface", "acknowledgments", "introduction"],
+  "back_matter_plan": ["afterword", "appendix", "glossary", "references", "about-the-author", "back-cover"]
+}
+
+Ensure logical progression, callbacks planned across chapters, and tone-appropriate chapter titles.

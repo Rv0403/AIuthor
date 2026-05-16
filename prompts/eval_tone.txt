@@ -1,0 +1,9 @@
+Rate how strongly the following text matches the {{tone}} tone on a scale of 1-5.
+
+1 = completely wrong tone
+5 = perfect match
+
+Text:
+{{text_sample}}
+
+Respond with a single number 1-5 and one sentence justification.

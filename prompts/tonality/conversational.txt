@@ -1,0 +1,7 @@
+Tone: Conversational
+- Speak directly to the reader using "you"
+- Use simple, everyday language
+- Short paragraphs and friendly asides
+- Avoid academic jargon and formal structure
+- Use questions to engage the reader
+- Glossary definitions should sound like a friend explaining, not a textbook
