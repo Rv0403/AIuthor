@@ -13,7 +13,7 @@ source venv/bin/activate
 
 pip install -r requirements.txt
 cp .env.example .env
-# Add OPENAI_API_KEY and/or ANTHROPIC_API_KEY to .env
+# Add GROQ_API_KEY (text agents) and GEMINI_API_KEY (embeddings only; see .env.example Option C)
 ```
 
 ### One-command test runs
@@ -37,6 +37,19 @@ POST to `http://localhost:8000/execute` with:
 ```json
 {"user_input": "A 10 chapter beginner guide to personal finance in conversational tone"}
 ```
+
+If insert position is missing, the API returns `status: "needs_clarification"` with `clarification_message` and `pending_insert`. Retry with `insert_after` and `source_run_id`:
+
+```json
+{
+  "user_input": "Insert a new chapter in book run abc123",
+  "task_type": "insert_chapter",
+  "source_run_id": "abc123",
+  "insert_after": 4
+}
+```
+
+Streamlit uses a **chat UI**: ambiguous inserts prompt for a chapter number in the same thread before continuing.
 
 ## Architecture
 

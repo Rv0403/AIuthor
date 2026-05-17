@@ -9,8 +9,9 @@ from memory.schemas import IntentResult
 def parse_intent_heuristic(user_input: str) -> IntentResult | None:
     text = user_input.lower()
     if "insert" in text and "chapter" in text:
-        m = re.search(r"between\s+chapter\s+(\d+)\s+and\s+(\d+)", text)
-        insert_after = int(m.group(1)) if m else 4
+        from agents.insert_clarification import parse_insert_after
+
+        insert_after = parse_insert_after(user_input)
         run_m = re.search(r"run\s+([a-z0-9-]+)", text)
         return IntentResult(
             task_type="insert_chapter",

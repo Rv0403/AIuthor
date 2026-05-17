@@ -24,6 +24,19 @@ from rag.ingest import ingest_corpus
 
 
 def node_intent(state: dict[str, Any]) -> dict[str, Any]:
+    if (
+        state.get("task_type") == "insert_chapter"
+        and state.get("insert_after") is not None
+        and state.get("source_run_id")
+    ):
+        intent = state.get("intent") or {}
+        return {
+            "task_type": "insert_chapter",
+            "intent": intent,
+            "insert_after": state["insert_after"],
+            "source_run_id": state["source_run_id"],
+            "brief": state.get("brief") or intent.get("brief") or {},
+        }
     result = run_intent_analyzer(state)
     result["task_type"] = result.get("task_type", "generate_book")
     return result
@@ -56,12 +69,42 @@ def node_load_source(state: dict[str, Any]) -> dict[str, Any]:
         updates["tone_override"] = intent.get("tone") or state.get("tone_override")
         updates["brief"] = {**updates["brief"], "tone": updates["tone_override"]}
     if state.get("task_type") == "insert_chapter":
-        updates["insert_after"] = intent.get("insert_after") or state.get("insert_after") or 4
+        from agents.insert_clarification import (
+            clarification_prompt,
+            validate_insert_after,
+        )
+
+        total = updates["total_chapters"]
+        insert_after = intent.get("insert_after") if intent.get("insert_after") is not None else state.get("insert_after")
+        ok, reason = validate_insert_after(insert_after, total)
+        if not ok:
+            return {
+                **updates,
+                "status": "needs_clarification",
+                "clarification_message": (
+                    clarification_prompt(total, source_id)
+                    if reason == "missing"
+                    else reason
+                ),
+                "pending_insert": {
+                    "source_run_id": source_id,
+                    "total_chapters": total,
+                    "user_input": state.get("user_input", ""),
+                    "intent": intent,
+                    "brief": updates.get("brief", {}),
+                },
+            }
+        updates["insert_after"] = insert_after
     return updates
 
 
 def node_prepare_insert(state: dict[str, Any]) -> dict[str, Any]:
-    insert_after = state.get("insert_after", 4)
+    insert_after = state.get("insert_after")
+    if insert_after is None:
+        return {
+            "status": "needs_clarification",
+            "errors": state.get("errors", []) + ["Insert position not specified."],
+        }
     existing = state.get("outline", {}).get("chapters", [])
     if existing:
         max_ch = max(c["chapter_number"] for c in existing)

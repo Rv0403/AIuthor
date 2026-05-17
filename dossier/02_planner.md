@@ -13,6 +13,9 @@ Create book title, chapter outline, summaries, and front/back matter plan.
 - Weak chapter progression → mitigated by requiring logical progression in prompt
 - Tone drift in titles → tone repeated in prompt header
 
+## Model routing (default)
+Groq `llama-3.3-70b-versatile` via `REASONING_PROVIDER=groq` (Option C).
+
 ## Prompt Logic
 Structured JSON-only output prevents regex parsing; chapter summaries seed Researcher queries.
 

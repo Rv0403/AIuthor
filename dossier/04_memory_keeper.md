@@ -11,7 +11,7 @@ Maintain cross-chapter continuity via fact registry, callbacks, glossary, charac
 
 ## Failure Modes
 - Callback spam → only first 120 chars of chapter stored as callback seed
-- Test D breakage → repair.py shifts refs before write
+- Test D breakage → repair.py shifts refs before write (only after valid `insert_after`; see dossier/10_insert_clarification.md)
 
 ## Prompt Logic
 Read before Writer (relevant slices); write after Fact Checker (commit facts/callbacks).

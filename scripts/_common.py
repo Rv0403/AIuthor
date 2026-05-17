@@ -12,7 +12,8 @@ if str(ROOT) not in sys.path:
 
 
 def setup_env(mock: bool = True, chapters: int | None = None) -> None:
-    if mock and not os.environ.get("OPENAI_API_KEY"):
+    has_keys = os.environ.get("GROQ_API_KEY") or os.environ.get("GEMINI_API_KEY")
+    if mock and not has_keys:
         os.environ["MOCK_LLM"] = "true"
     from config import get_settings
     get_settings.cache_clear()

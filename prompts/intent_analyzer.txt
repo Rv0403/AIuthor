@@ -23,3 +23,4 @@ Examples:
 - "10 chapter beginner guide to personal finance conversational" -> generate_book, topic Personal Finance, 10 chapters
 - "regenerate chapter 3 academic" -> tone_conversion, target_chapter 3, tone Academic
 - "insert chapter between 4 and 5" -> insert_chapter, insert_after 4
+- "insert a chapter in book run abc" (no position) -> insert_chapter, insert_after null

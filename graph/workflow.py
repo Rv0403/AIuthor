@@ -52,6 +52,7 @@ def build_workflow():
         "chapter_pipeline": "chapter_pipeline",
         "prepare_insert": "prepare_insert",
         "assembler": "assembler",
+        "needs_clarification": END,
     })
 
     graph.add_edge("prepare_insert", "chapter_pipeline")
@@ -76,7 +77,16 @@ def build_workflow():
     return graph.compile()
 
 
-def run_workflow(user_input: str, run_id: str | None = None) -> dict[str, Any]:
+def run_workflow(
+    user_input: str,
+    run_id: str | None = None,
+    *,
+    task_type: str | None = None,
+    insert_after: int | None = None,
+    source_run_id: str | None = None,
+    intent: dict[str, Any] | None = None,
+    brief: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     settings = get_settings()
     settings.outputs_dir.mkdir(parents=True, exist_ok=True)
     settings.traces_dir.mkdir(parents=True, exist_ok=True)
@@ -96,5 +106,16 @@ def run_workflow(user_input: str, run_id: str | None = None) -> dict[str, Any]:
         "errors": [],
         "status": "running",
     }
+    if task_type:
+        initial["task_type"] = task_type
+    if insert_after is not None:
+        initial["insert_after"] = insert_after
+    if source_run_id:
+        initial["source_run_id"] = source_run_id
+    if intent:
+        initial["intent"] = intent
+    if brief:
+        initial["brief"] = brief
+
     result = app.invoke(initial)
     return dict(result)

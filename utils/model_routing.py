@@ -1,4 +1,4 @@
-"""Per-agent LLM capability routing (Groq + Gemini free tiers)."""
+"""Per-agent LLM capability routing (Groq text + Gemini embeddings by default)."""
 from __future__ import annotations
 
 # Capability: cheap | strong | reasoning | grounded

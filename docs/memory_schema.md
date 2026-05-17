@@ -71,3 +71,7 @@
 ## BookMemory (aggregate)
 
 All stores live in `outputs/{run_id}/memory.json` and are read/written by Memory Keeper each chapter.
+
+## Chapter insert repair
+
+On `insert_chapter`, `memory/repair.py` renumbers outline chapters, shifts `introduced_in` / `used_in` / `chapter_refs` when `insert_after` is set, and appends a `DecisionLogEntry` from agent `repair`. Invalid or missing `insert_after` does not run repair until the user clarifies via chat or API.

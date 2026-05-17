@@ -4,12 +4,15 @@
 
 ```mermaid
 flowchart TB
-    UI[Streamlit] --> API[POST /execute]
+    UI[Streamlit chat] --> API[POST /execute]
     API --> Intent[Intent Analyzer]
     Intent --> Router{task_type}
     Router -->|generate_book| Planner --> ChapterLoop
     Router -->|tone_conversion| LoadSource --> ChapterLoop
-    Router -->|insert_chapter| LoadSource --> Repair --> ChapterLoop
+    Router -->|insert_chapter| LoadSource --> Valid{insert_after valid?}
+    Valid -->|no| Clarify[needs_clarification → chat prompt]
+    Clarify --> UI
+    Valid -->|yes| Repair[prepare_insert / repair] --> ChapterLoop
   ChapterLoop[Research → Memory → Write → Humanize → Edit → FactCheck → Memory]
     ChapterLoop --> Assembler
     Assembler --> Export[PDF + DOCX]
@@ -26,7 +29,7 @@ flowchart TB
 |----------|---------|------|
 | `generate_book` | New book brief | Intent → Planner → chapter loop → Assembler |
 | `tone_conversion` | Regenerate chapter in new tone | Intent → Load snapshot → single chapter loop → Assembler |
-| `insert_chapter` | Insert between N and N+1 | Intent → Load → Repair renumber → generate new chapter → Assembler |
+| `insert_chapter` | Insert between N and N+1 | Intent → Load → validate position → (clarify if needed) → Repair renumber → generate new chapter → Assembler |
 
 ## Memory stores
 
@@ -50,9 +53,12 @@ flowchart TB
 - RAG empty: Researcher returns fewer facts; Writer instructed not to invent.
 - Fact Checker: softens unverifiable claims; never fabricates ISBNs.
 - Insert repair: `memory/repair.py` renumbers chapters and shifts callback/glossary refs before regeneration.
+- Ambiguous insert position: workflow returns `needs_clarification`; Streamlit chat asks for a valid chapter (no default `insert_after=4`).
 
 ## Model routing
 
-- **Strong** (Planner, Writer, Humanizer, Assembler): GPT-4o or Claude Sonnet.
-- **Cheap** (Intent, Researcher extract, Fact Checker, eval judges): GPT-4o-mini or Haiku.
-- **Embeddings**: `text-embedding-3-small`
+- **Strong** (Writer, Humanizer, Editor, Assembler): Groq `llama-3.3-70b-versatile`.
+- **Reasoning** (Planner): Groq `llama-3.3-70b-versatile`.
+- **Grounded** (Researcher; RAG corpus only, no live Google Search): Groq `llama-3.1-8b-instant`.
+- **Cheap** (Intent, Fact Checker, eval judges): Groq `llama-3.1-8b-instant`.
+- **Embeddings** (RAG): Gemini `gemini-embedding-001`.

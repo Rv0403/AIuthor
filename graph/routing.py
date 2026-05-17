@@ -16,6 +16,8 @@ def route_after_intent(state: BookState) -> str:
 
 
 def route_after_load(state: BookState) -> str:
+    if state.get("status") == "needs_clarification":
+        return "needs_clarification"
     task = state.get("task_type", "")
     if task == "tone_conversion":
         return "chapter_pipeline"

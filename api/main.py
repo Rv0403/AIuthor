@@ -15,6 +15,9 @@ app = FastAPI(title="AIuthor", description="Agentic book generation orchestratio
 class ExecuteRequest(BaseModel):
     user_input: str = Field(..., min_length=3)
     run_id: str | None = None
+    task_type: str | None = None
+    insert_after: int | None = None
+    source_run_id: str | None = None
 
 
 class ExecuteResponse(BaseModel):
@@ -24,6 +27,8 @@ class ExecuteResponse(BaseModel):
     output_paths: dict[str, str] = Field(default_factory=dict)
     errors: list[str] = Field(default_factory=list)
     eval_report: dict[str, Any] | None = None
+    clarification_message: str | None = None
+    pending_insert: dict[str, Any] | None = None
 
 
 @app.get("/health")
@@ -34,7 +39,13 @@ def health():
 @app.post("/execute", response_model=ExecuteResponse)
 def execute(req: ExecuteRequest):
     try:
-        result = run_workflow(req.user_input, run_id=req.run_id)
+        result = run_workflow(
+            req.user_input,
+            run_id=req.run_id,
+            task_type=req.task_type,
+            insert_after=req.insert_after,
+            source_run_id=req.source_run_id,
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
 
@@ -54,4 +65,6 @@ def execute(req: ExecuteRequest):
         output_paths=result.get("output_paths", {}),
         errors=result.get("errors", []),
         eval_report=eval_report,
+        clarification_message=result.get("clarification_message"),
+        pending_insert=result.get("pending_insert"),
     )

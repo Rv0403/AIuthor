@@ -25,3 +25,5 @@ class BookState(TypedDict, total=False):
     target_chapter: int | None
     tone_override: str | None
     status: str
+    clarification_message: str | None
+    pending_insert: dict[str, Any] | None

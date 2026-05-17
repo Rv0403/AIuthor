@@ -27,7 +27,7 @@ class VectorStore:
 
     def add_documents(self, ids: list[str], texts: list[str], metadatas: list[dict[str, Any]] | None = None) -> None:
         self._ensure_client()
-        embeddings = self._embed(texts)
+        embeddings = self._embed(texts, task_type="RETRIEVAL_DOCUMENT")
         self._collection.add(
             ids=ids,
             documents=texts,
@@ -39,7 +39,7 @@ class VectorStore:
         self._ensure_client()
         settings = get_settings()
         k = top_k or settings.rag_top_k
-        embedding = self._embed([query_text])[0]
+        embedding = self._embed([query_text], task_type="RETRIEVAL_QUERY")[0]
         results = self._collection.query(query_embeddings=[embedding], n_results=k)
         docs = []
         if results and results.get("documents"):
@@ -56,62 +56,33 @@ class VectorStore:
                 )
         return docs
 
-    def _embed_ollama(self, texts: list[str]) -> list[list[float]]:
-        import httpx
-
-        settings = get_settings()
-        url = f"{settings.ollama_base_url.rstrip('/')}/api/embeddings"
-        vectors: list[list[float]] = []
-        for text in texts:
-            resp = httpx.post(
-                url,
-                json={"model": settings.embedding_model, "prompt": text},
-                timeout=120.0,
-            )
-            resp.raise_for_status()
-            vectors.append(resp.json()["embedding"])
-        return vectors
-
-    def _embed_gemini(self, texts: list[str]) -> list[list[float]]:
+    def _embed_gemini(self, texts: list[str], *, task_type: str | None = None) -> list[list[float]]:
         settings = get_settings()
         if not settings.gemini_api_key:
-            raise ValueError("GEMINI_API_KEY required for Gemini embeddings")
+            raise ValueError("GEMINI_API_KEY required for embeddings")
         from google import genai
+        from google.genai import types
 
+        model = settings.embedding_model.removeprefix("models/")
         client = genai.Client(api_key=settings.gemini_api_key)
+        config = types.EmbedContentConfig(task_type=task_type) if task_type else None
         vectors: list[list[float]] = []
         for text in texts:
-            resp = client.models.embed_content(model=settings.embedding_model, contents=text)
-            vectors.append(list(resp.embeddings[0].values))
+            resp = client.models.embed_content(
+                model=model,
+                contents=text,
+                config=config,
+            )
+            emb = resp.embeddings[0]
+            values = getattr(emb, "values", None) or emb
+            vectors.append(list(values))
         return vectors
 
-    def _embedding_provider(self) -> str:
-        settings = get_settings()
-        if settings.embedding_provider:
-            return settings.embedding_provider
-        if settings.llm_provider == "ollama":
-            return "ollama"
-        if settings.gemini_api_key:
-            return "gemini"
-        return "openai"
-
-    def _embed(self, texts: list[str]) -> list[list[float]]:
+    def _embed(self, texts: list[str], *, task_type: str | None = None) -> list[list[float]]:
         settings = get_settings()
         if settings.mock_llm:
             import hashlib
 
             return [[float(int(hashlib.md5(t.encode()).hexdigest()[:8], 16) % 1000) / 1000.0] * 64 for t in texts]
 
-        provider = self._embedding_provider()
-        if provider == "ollama":
-            return self._embed_ollama(texts)
-        if provider == "gemini":
-            return self._embed_gemini(texts)
-
-        if not settings.openai_api_key:
-            raise ValueError("OPENAI_API_KEY required for OpenAI embeddings (or set EMBEDDING_PROVIDER=gemini)")
-        from openai import OpenAI
-
-        client = OpenAI(api_key=settings.openai_api_key)
-        resp = client.embeddings.create(model=settings.embedding_model, input=texts)
-        return [d.embedding for d in resp.data]
+        return self._embed_gemini(texts, task_type=task_type)

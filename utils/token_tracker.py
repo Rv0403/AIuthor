@@ -3,11 +3,11 @@ from dataclasses import dataclass
 
 # USD per 1M tokens (approximate, update as pricing changes)
 PRICING = {
-    "gpt-4o": {"input": 2.50, "output": 10.00},
-    "gpt-4o-mini": {"input": 0.15, "output": 0.60},
-    "claude-sonnet-4-20250514": {"input": 3.00, "output": 15.00},
-    "claude-3-5-haiku-20241022": {"input": 0.80, "output": 4.00},
-    "text-embedding-3-small": {"input": 0.02, "output": 0.0},
+    "llama-3.3-70b-versatile": {"input": 0.0, "output": 0.0},
+    "llama-3.1-8b-instant": {"input": 0.0, "output": 0.0},
+    "gemini-2.0-flash": {"input": 0.0, "output": 0.0},
+    "gemini-2.5-flash": {"input": 0.0, "output": 0.0},
+    "gemini-embedding-001": {"input": 0.0, "output": 0.0},
 }
 
 

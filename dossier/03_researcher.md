@@ -1,7 +1,10 @@
 # Researcher Agent
 
 ## Purpose
-Ground non-fiction chapters with RAG-retrieved facts and glossary candidates.
+Ground non-fiction chapters with RAG-retrieved facts and glossary candidates from the run corpus (ChromaDB).
+
+## Model routing (default)
+Groq `llama-3.3-70b-versatile` via `GROUNDED_PROVIDER=groq` (Option C). Local RAG context is injected into the prompt; live Google Search grounding is only used when `GROUNDED_PROVIDER=gemini`.
 
 ## Inputs
 - chapter title/summary, topic, tone, retrieved_context
