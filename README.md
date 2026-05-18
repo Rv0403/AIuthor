@@ -53,15 +53,33 @@ Streamlit uses a **chat UI**: ambiguous inserts prompt for a chapter number in t
 
 ## Architecture
 
-- **Orchestration:** LangGraph with Intent Analyzer → conditional workflows
-- **Agents:** Planner, Researcher, Memory Keeper, Writer, Humanizer, Editor, Fact Checker, Assembler
-- **Memory:** Fact registry, character bible, callback index, tone fingerprint, decision log
-- **Outputs:** PDF + DOCX per run in `outputs/{run_id}/`
-- **Traces:** `traces/{run_id}/` — prompt log, agent trace, memory I/O, token ledger
+Single entry point (`POST /execute`, Streamlit chat, or CLI) → **LangGraph** routes by `task_type`:
+
+```mermaid
+flowchart LR
+    IN[User input] --> IA[Intent]
+    IA -->|generate_book| PL[Planner] --> CH[Chapter loop] --> AS[Assembler]
+    IA -->|tone_conversion| LD[Load snapshot] --> CH
+    IA -->|insert_chapter| LD --> RP[Repair] --> CH
+    AS --> OUT[PDF + DOCX]
+```
+
+| Layer | Location | Role |
+|-------|----------|------|
+| Orchestration | `graph/` | StateGraph, routing, `BookState` |
+| Agents | `agents/` | Intent, planner, adaptive chapter pipeline, assembler |
+| Memory | `memory/` | Facts, callbacks, glossary, snapshots, insert repair |
+| RAG | `rag/` + `.chroma/` | Corpus ingest and retrieval per run |
+| I/O | `outputs/`, `traces/` | Books, memory JSON, observability logs |
+
+**Chapter pipeline** auto-selects `batch` (all chapters in one call), `combined` (one fused pass per chapter), or `split` (Researcher → Writer → … → Fact Checker) based on context size.
+
+**Memory:** structured JSON per run; **traces:** prompts, agent steps, memory I/O, token ledger.
 
 ## Documentation
 
-- [docs/architecture.md](docs/architecture.md)
+- [docs/architecture.md](docs/architecture.md) — system overview, layers, agents, data flow
+- [docs/workflow-dag.md](docs/workflow-dag.md) — LangGraph DAG, routing table, chapter sub-pipeline
 - [docs/memory_schema.md](docs/memory_schema.md)
 - [docs/design_decisions.md](docs/design_decisions.md)
 - [docs/evals_report.md](docs/evals_report.md)
