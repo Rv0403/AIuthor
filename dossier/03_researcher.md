@@ -1,23 +1,37 @@
-# Researcher Agent
+# Researcher
 
 ## Purpose
-Ground non-fiction chapters with RAG-retrieved facts and glossary candidates from the run corpus (ChromaDB).
-
-## Model routing (default)
-Groq `llama-3.3-70b-versatile` via `GROUNDED_PROVIDER=groq` (Option C). Local RAG context is injected into the prompt; live Google Search grounding is only used when `GROUNDED_PROVIDER=gemini`.
+Ground non-fiction (and fact-heavy) chapters by extracting cited facts and glossary candidates from RAG-retrieved corpus chunks only.
 
 ## Inputs
-- chapter title/summary, topic, tone, retrieved_context
+| Field | Source |
+|-------|--------|
+| `topic`, `chapter_title`, `chapter_summary`, `tone` | Outline + brief |
+| `retrieved_context` | ChromaDB + optional BM25 (`rag/retriever.py`) |
+
+Skipped when `skip_researcher_without_rag=true` and corpus is empty (facts list empty).
 
 ## Outputs
-- `ChapterResearch` JSON with sourced facts
+| Field | Type | Use |
+|-------|------|-----|
+| `ChapterResearch` | JSON | Writer, fact_checker, memory_keeper |
+| `facts[]` | `{fact, source}` | Writer grounding; memory fact_registry |
+| `references[]` | strings | Fact checker (generic only) |
+| `glossary_candidates[]` | `{term, definition}` | Memory glossary |
 
-## Failure Modes
-- Empty retrieval → fewer facts, no hallucination
-- Fabricated references → blocked by prompt and Fact Checker
+## Known failure modes
+| Failure | Mitigation |
+|---------|------------|
+| Empty retrieval | Prompt: return fewer facts, do not hallucinate |
+| Fabricated studies/ISBNs | “Every fact MUST cite source”; fact_checker second pass |
+| LLM ignores corpus | Retrieved context injected in full; abstain rules in prompt |
+| Duplicate facts across chapters | memory_keeper dedupes by chapter commit |
 
-## Prompt Logic
-Citation-or-abstain rule; sources must come from retrieved context only.
+## Why this prompt
+- **Citation-or-abstain**: Separates generation from evidence; supports assessment “grounded non-fiction” requirement.
+- **JSON facts**: Writer receives structured list, not raw chunks—reduces token noise and contradiction.
+- **Glossary at research time**: Terms introduced when chapter is researched, not invented at assembly.
+- **Tone in research**: Definitions can match Academic vs Conversational before writer sees them.
 
-## Full Prompt
+## Full prompt
 See [prompts/researcher.txt](../prompts/researcher.txt)

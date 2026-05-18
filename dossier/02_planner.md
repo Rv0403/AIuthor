@@ -1,23 +1,35 @@
-# Planner Agent
+# Planner
 
 ## Purpose
-Create book title, chapter outline, summaries, and front/back matter plan.
+Produce a publication-ready book outline—title, chapter list with summaries, and front/back matter plan—that seeds the chapter loop and assembler.
 
 ## Inputs
-- topic, reader, tone, genre, num_chapters, words_per_chapter, character_names
+| Field | Source |
+|-------|--------|
+| `topic`, `reader`, `tone`, `genre` | Intent + brief |
+| `num_chapters`, `words_per_chapter` | Intent |
+| `character_names` | Intent (fiction) |
 
 ## Outputs
-- `BookOutline` JSON
+| Field | Type | Use |
+|-------|------|-----|
+| `BookOutline` | JSON | Chapter loop, TOC, assembler |
+| `title`, `subtitle`, `chapters[]` | | Per-chapter `title`, `summary`, `target_words` |
+| `front_matter_plan`, `back_matter_plan` | lists | Assembler surface checklist |
 
-## Failure Modes
-- Weak chapter progression → mitigated by requiring logical progression in prompt
-- Tone drift in titles → tone repeated in prompt header
+## Known failure modes
+| Failure | Mitigation |
+|---------|------------|
+| Weak chapter progression | Prompt requires logical progression and cross-chapter callbacks in summaries |
+| Tone drift in titles | Tone repeated in prompt header; summaries must match tonality |
+| Invalid JSON | `invoke_structured` + schema validation |
+| Over-long outline for context | Planner runs once; summaries kept to 2–3 sentences |
 
-## Model routing (default)
-Groq `llama-3.3-70b-versatile` via `REASONING_PROVIDER=groq` (Option C).
+## Why this prompt
+- **Structured outline only**: JSON prevents regex scraping; downstream agents consume stable fields.
+- **Assessment alignment**: `num_chapters` and `words_per_chapter` come from intent so Tests A/B hit requested scale.
+- **Front/back matter plan**: Ensures assembler generates full book surfaces, not chapters-only PDFs.
+- **Callback planning**: “Callbacks planned across chapters” in prompt seeds memory_keeper and writer continuity.
 
-## Prompt Logic
-Structured JSON-only output prevents regex parsing; chapter summaries seed Researcher queries.
-
-## Full Prompt
+## Full prompt
 See [prompts/planner.txt](../prompts/planner.txt)
