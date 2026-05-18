@@ -5,6 +5,7 @@ import json
 import time
 from typing import Any
 
+from config import get_settings
 from memory.schemas import ChapterResearch
 from rag.retriever import RAGRetriever
 from utils.llm_client import invoke_structured, load_prompt
@@ -29,17 +30,40 @@ def run_researcher(state: dict[str, Any]) -> dict[str, Any]:
     retriever = RAGRetriever(collection)
     query = f"{brief.get('topic', '')} {ch.get('title', '')} {ch.get('summary', '')}"
     retrieved = retriever.retrieve(query)
-    context = "\n\n---\n\n".join(r["text"] for r in retrieved) if retrieved else "No retrieved documents."
-
-    prompt = load_prompt(
-        "researcher.txt",
-        topic=brief.get("topic", ""),
-        chapter_title=ch.get("title", ""),
-        chapter_summary=ch.get("summary", ""),
-        tone=brief.get("tone", "Conversational"),
-        retrieved_context=context[:12000],
-    )
-    research = invoke_structured("researcher", prompt, ChapterResearch, tier="cheap", run_id=run_id)
+    settings = get_settings()
+    if (settings.skip_researcher_without_rag and not retrieved) or not settings.researcher_use_llm:
+        facts = [
+            {
+                "fact": (r.get("text") or "")[:600],
+                "source": (r.get("metadata") or {}).get("source", "corpus"),
+            }
+            for r in (retrieved or [])[:5]
+        ]
+        research = ChapterResearch(
+            chapter_number=chapter_num,
+            facts=facts,
+            references=[(r.get("metadata") or {}).get("source", "") for r in (retrieved or [])[:5]],
+            glossary_candidates=[],
+        )
+    else:
+        context = "\n\n---\n\n".join(r["text"] for r in retrieved) if retrieved else "No retrieved documents."
+        prompt = load_prompt(
+            "researcher.txt",
+            topic=brief.get("topic", ""),
+            chapter_title=ch.get("title", ""),
+            chapter_summary=ch.get("summary", ""),
+            tone=brief.get("tone", "Conversational"),
+            retrieved_context=context[:12000],
+        )
+        try:
+            research = invoke_structured("researcher", prompt, ChapterResearch, tier="cheap", run_id=run_id)
+        except Exception:
+            research = ChapterResearch(
+                chapter_number=chapter_num,
+                facts=[],
+                references=[],
+                glossary_candidates=[],
+            )
     research_dict = research.model_dump()
     research_dict["chapter_number"] = chapter_num
     research_dict["retrieved_sources"] = [r.get("metadata", {}) for r in retrieved]

@@ -55,10 +55,20 @@ flowchart TB
 - Insert repair: `memory/repair.py` renumbers chapters and shifts callback/glossary refs before regeneration.
 - Ambiguous insert position: workflow returns `needs_clarification`; Streamlit chat asks for a valid chapter (no default `insert_after=4`).
 
+## LLM calls per workflow (N = chapters)
+
+Pipeline mode is chosen automatically from context size (`chapter_pipeline_mode=auto`):
+
+| Mode | When | New book calls |
+|------|------|----------------|
+| **batch** | Few short chapters fit in one prompt | 1 intent + 1 planner + **1** chapter LLM + 1 assembler ≈ **4** |
+| **combined** | Default — each chapter in one pass | 1 intent + 1 planner + **N** + 1 assembler ≈ **N + 3** |
+| **split** | Very long chapters only | 1 intent + 1 planner + **5N** + 1 assembler ≈ **5N + 3** |
+
+Combined pass = research + write + humanize + edit + fact-check in a single prompt per chapter.
+Memory read/write use no LLM.
+
 ## Model routing
 
-- **Strong** (Writer, Humanizer, Editor, Assembler): Groq `llama-3.3-70b-versatile`.
-- **Reasoning** (Planner): Groq `llama-3.3-70b-versatile`.
-- **Grounded** (Researcher; RAG corpus only, no live Google Search): Groq `llama-3.1-8b-instant`.
-- **Cheap** (Intent, Fact Checker, eval judges): Groq `llama-3.1-8b-instant`.
-- **Embeddings** (RAG): Gemini `gemini-embedding-001`.
+- Default: all text agents on **Groq** (`AGENT_PROVIDERS` in `config.py`).
+- **Embeddings** (RAG): Gemini `gemini-embedding-001` when `GEMINI_API_KEY` is set.

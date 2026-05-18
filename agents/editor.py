@@ -23,7 +23,7 @@ def run_editor(state: dict[str, Any]) -> dict[str, Any]:
 
     prompt = load_prompt(
         "editor.txt",
-        chapter_text=ch.get("humanized_text", ch.get("raw_text", ""))[:15000],
+        chapter_text=ch.get("humanized_text", ch.get("raw_text", ""))[:10000],
         chapter_number=str(chapter_num),
         book_title=state.get("outline", {}).get("title", ""),
     )

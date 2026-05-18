@@ -19,20 +19,29 @@ def run_intent_analyzer(state: dict[str, Any]) -> dict[str, Any]:
 
     start = time.perf_counter()
     from config import get_settings
-    from agents.intent_heuristics import parse_intent_heuristic
+    from agents.intent_heuristics import is_confident_heuristic, parse_intent_heuristic
 
+    settings = get_settings()
     heuristic = parse_intent_heuristic(user_input)
-    if get_settings().mock_llm and heuristic:
+    use_heuristic_only = heuristic and (
+        settings.mock_llm
+        or (settings.intent_skip_llm_when_heuristic and is_confident_heuristic(heuristic))
+    )
+    if use_heuristic_only:
         intent = heuristic
     else:
         prompt = load_prompt("intent_analyzer.txt", user_input=user_input)
         intent = invoke_structured("intent_analyzer", prompt, IntentResult, tier="cheap", run_id=run_id)
-        if heuristic and not intent.source_run_id:
-            intent.source_run_id = heuristic.source_run_id
+        if heuristic:
+            if not intent.source_run_id:
+                intent.source_run_id = heuristic.source_run_id
             if heuristic.task_type != "generate_book":
                 intent.task_type = heuristic.task_type
                 intent.insert_after = heuristic.insert_after
                 intent.target_chapter = heuristic.target_chapter
+            if heuristic.task_type == "generate_book" and heuristic.num_chapters:
+                intent.num_chapters = heuristic.num_chapters
+                intent.words_per_chapter = heuristic.words_per_chapter
 
     if trace:
         trace.log_agent_end("intent_analyzer", intent.model_dump(), (time.perf_counter() - start) * 1000)

@@ -6,6 +6,26 @@ import re
 from memory.schemas import IntentResult
 
 
+def _parse_words_per_chapter(user_input: str, default: int = 2500) -> int:
+    text = user_input.lower()
+    m = re.search(r"([\d,]+)\s*words?", text)
+    if m:
+        return int(m.group(1).replace(",", ""))
+    compact = text.replace(",", "").replace(" ", "")
+    if "2500" in compact:
+        return 2500
+    return default
+
+
+def is_confident_heuristic(intent: IntentResult) -> bool:
+    """True when regex parse is complete enough to skip the intent LLM."""
+    if intent.task_type == "generate_book":
+        return bool(intent.topic) and intent.num_chapters >= 1 and intent.words_per_chapter >= 500
+    if intent.task_type in ("tone_conversion", "insert_chapter"):
+        return intent.source_run_id is not None
+    return False
+
+
 def parse_intent_heuristic(user_input: str) -> IntentResult | None:
     text = user_input.lower()
     if "insert" in text and "chapter" in text:
@@ -58,6 +78,6 @@ def parse_intent_heuristic(user_input: str) -> IntentResult | None:
             tone="Conversational",
             genre="non-fiction",
             num_chapters=int(ch_m.group(1)) if ch_m else 10,
-            words_per_chapter=2500 if "2500" in text else 500,
+            words_per_chapter=_parse_words_per_chapter(user_input),
         )
     return None

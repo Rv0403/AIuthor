@@ -27,3 +27,4 @@ class BookState(TypedDict, total=False):
     status: str
     clarification_message: str | None
     pending_insert: dict[str, Any] | None
+    chapter_pipeline_mode: str

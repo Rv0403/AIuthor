@@ -4,7 +4,8 @@ from __future__ import annotations
 import time
 from typing import Any
 
-from memory.schemas import BookOutline
+from config import get_settings
+from memory.schemas import BookOutline, ChapterOutline
 from utils.llm_client import invoke_structured, load_prompt
 from utils.logger import get_trace_logger
 
@@ -13,6 +14,7 @@ def run_planner(state: dict[str, Any]) -> dict[str, Any]:
     run_id = state.get("run_id", "")
     brief = state.get("brief", {})
     trace = get_trace_logger(run_id)
+    settings = get_settings()
 
     trace.log_agent_start("planner", brief)
     start = time.perf_counter()
@@ -27,11 +29,9 @@ def run_planner(state: dict[str, Any]) -> dict[str, Any]:
         words_per_chapter=str(brief.get("words_per_chapter", 2500)),
         character_names=", ".join(brief.get("character_names", [])) or "none",
     )
-    from config import get_settings
-    from memory.schemas import ChapterOutline
 
     outline = invoke_structured("planner", prompt, BookOutline, tier="strong", run_id=run_id)
-    if get_settings().mock_llm:
+    if settings.mock_llm:
         n = int(brief.get("num_chapters", 10))
         w = int(brief.get("words_per_chapter", 500))
         topic = brief.get("topic", "Personal Finance")
@@ -53,8 +53,16 @@ def run_planner(state: dict[str, Any]) -> dict[str, Any]:
 
     trace.log_agent_end("planner", {"title": outline.title, "chapters": len(outline.chapters)}, (time.perf_counter() - start) * 1000)
 
-    return {
+    from utils.context_budget import choose_chapter_pipeline_mode
+
+    planned = {
         "outline": outline_dict,
         "total_chapters": len(outline.chapters),
         "current_chapter": 1,
+        "brief": brief,
     }
+    mode = settings.chapter_pipeline_mode
+    if mode == "auto":
+        mode = choose_chapter_pipeline_mode({**state, **planned})
+    planned["chapter_pipeline_mode"] = mode
+    return planned

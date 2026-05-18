@@ -4,6 +4,28 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
+
+def _patch_langchain_reviver_default() -> None:
+    """LangGraph's serde uses Reviver() with allowed_objects=None, which warns on every import."""
+    import importlib
+
+    lc_load = importlib.import_module("langchain_core.load.load")
+    if getattr(lc_load.Reviver, "_aiuthor_default_core", False):
+        return
+
+    _orig = lc_load.Reviver
+
+    class Reviver(_orig):  # type: ignore[misc, valid-type]
+        _aiuthor_default_core = True
+
+        def __init__(self, allowed_objects="core", **kwargs):  # type: ignore[no-untyped-def]
+            super().__init__(allowed_objects=allowed_objects, **kwargs)
+
+    lc_load.Reviver = Reviver
+
+
+_patch_langchain_reviver_default()
+
 from langgraph.graph import END, StateGraph
 
 from graph.nodes import (

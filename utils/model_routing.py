@@ -12,6 +12,8 @@ AGENT_CAPABILITIES: dict[str, str] = {
     "fact_checker": "cheap",
     "assembler": "strong",
     "tone_eval": "cheap",
+    "chapter_combined": "strong",
+    "chapters_batch": "strong",
 }
 
 TIER_FALLBACK: dict[str, str] = {

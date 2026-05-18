@@ -29,14 +29,15 @@ def run_humanizer(state: dict[str, Any]) -> dict[str, Any]:
     if state.get("tone_override"):
         tone_fp = {"tone": state["tone_override"], "rules": []}
 
-    raw = ch.get("raw_text", "")[:15000]
+    raw = ch.get("raw_text", "")[:10000]
     prompt = load_prompt(
         "humanizer.txt",
         chapter_text=raw,
         tone_block=format_tone_block(tone_fp),
         memory_context=format_memory_context(memory, chapter_num),
     )
-    if not get_settings().mock_llm:
+    settings = get_settings()
+    if settings.humanizer_variants and not settings.mock_llm:
         from evals.tone_eval import pick_best_opening
 
         tone_name = (

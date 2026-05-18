@@ -4,18 +4,8 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-from agents import (
-    run_assembler,
-    run_editor,
-    run_fact_checker,
-    run_humanizer,
-    run_intent_analyzer,
-    run_memory_read,
-    run_memory_write,
-    run_planner,
-    run_researcher,
-    run_writer,
-)
+from agents import run_assembler, run_intent_analyzer, run_planner
+from agents.chapter_pipeline import run_chapter_pipeline
 from config import get_settings
 from memory.memory_store import MemoryStore
 from memory.repair import full_repair_after_insert
@@ -137,11 +127,8 @@ def node_planner(state: dict[str, Any]) -> dict[str, Any]:
 
 
 def node_chapter_pipeline(state: dict[str, Any]) -> dict[str, Any]:
-    """Single chapter: research → memory read → write → humanize → edit → fact-check → memory write."""
-    s = dict(state)
-    for fn in (run_researcher, run_memory_read, run_writer, run_humanizer, run_editor, run_fact_checker, run_memory_write):
-        s = {**s, **fn(s)}
-    return s
+    """Adaptive: batch all chapters, one combined pass per chapter, or split agents if too large."""
+    return run_chapter_pipeline(state)
 
 
 def node_advance_chapter(state: dict[str, Any]) -> dict[str, Any]:

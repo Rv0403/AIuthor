@@ -24,8 +24,8 @@ def run_fact_checker(state: dict[str, Any]) -> dict[str, Any]:
 
     prompt = load_prompt(
         "fact_checker.txt",
-        chapter_text=ch.get("edited_text", ch.get("humanized_text", ""))[:15000],
-        verified_facts=str(research.get("facts", []))[:6000],
+        chapter_text=ch.get("edited_text", ch.get("humanized_text", ""))[:8000],
+        verified_facts=str(research.get("facts", []))[:4000],
         references=str(research.get("references", []))[:2000],
     )
     text = invoke_text("fact_checker", prompt, tier="cheap", run_id=run_id)

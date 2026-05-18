@@ -100,6 +100,16 @@ class ChapterContent(BaseModel):
     word_count: int = 0
 
 
+class BatchChapterItem(BaseModel):
+    chapter_number: int
+    title: str = ""
+    text: str = ""
+
+
+class ChaptersBatchOutput(BaseModel):
+    chapters: list[BatchChapterItem]
+
+
 class BookManifest(BaseModel):
     title: str
     half_title: str = ""

@@ -6,6 +6,7 @@ from typing import Any
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+from config import get_settings
 from evals.run_evals import run_all_evals, write_markdown_report
 from graph.workflow import run_workflow
 
@@ -51,7 +52,7 @@ def execute(req: ExecuteRequest):
 
     run_id = result.get("run_id", "")
     eval_report = None
-    if run_id and result.get("status") == "completed":
+    if run_id and result.get("status") == "completed" and get_settings().auto_run_evals:
         try:
             eval_report = run_all_evals(run_id)
             write_markdown_report(run_id, eval_report)
